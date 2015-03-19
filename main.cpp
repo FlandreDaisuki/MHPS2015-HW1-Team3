@@ -1,89 +1,92 @@
-#include <cstdio>
-#include <cstdlib>
 #include <string>
-#include <iostream>
+#include <fstream>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
+#include "datatype.h"
 
-using namespace std;
-
-const int BUFFER_SIZE = 1024;
-char buffer[BUFFER_SIZE];
-
-void NewArray2D(int **&a, int r, int c);
-void DelArray2D(int **&a, int c);
-int Objective(int **dp, int mac, int job);
-void SwapJob(int **a, int mac, int ja, int jb);
+Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist);
+void VisitNeighbor(Schedule &schedule, const Neighbor &nb);
+void Tabu(Tabulist &tabulist, const Neighbor &nb) {}
+int Calculate(const Schedule &schedule);
 
 int main(int argc, char const *argv[])
 {
-    int machine_num, job_num;
-    char filename[15];
-    cin.getline(buffer, BUFFER_SIZE);
-    sscanf(buffer, " %d %d %s", &job_num, &machine_num, filename);
-    int **table;
-    NewArray2D(table, machine_num, job_num);
-    int **dp;
-    NewArray2D(dp, machine_num, job_num);
-    for (int i = 0; i < machine_num; ++i)
+    srand(time(NULL));
+    const int HOW_TIMES_TO_RUN = 20;
+    int job, machine;
+    std::string fname;
+    //std::cin >> job >> machine >> fname;
+    std::ifstream fin;
+    fin.open("data/debug");
+
+    fin >> job >> machine >> fname;
+
+    Schedule schedule(job, machine);
+    Solution solution;
+
+    for (int i = 0; i < machine; ++i)
     {
-        for (int j = 0; j < job_num; ++j)
+        for (int j = 0; j < job; ++j)
         {
-            cin >> table[i][j];
-            dp[i][j] = table[i][j];
+            //std::cin >> schedule.getMatrix()[i][j];
+            fin >> schedule.getMatrix()[i][j];
         }
     }
+    schedule.Print();
+    std::cout << "Total: " << Calculate(schedule) << std::endl << std::endl;
+    Tabulist tabulist;
+
+    Neighbor nb = FindNeighbor(schedule, tabulist);
+    nb.Print();
+    solution.push_back(nb.getValue());
+    VisitNeighbor(schedule, nb);
+    Tabu(tabulist, nb);
 
     return 0;
 }
 
-void NewArray2D(int **&a, int r, int c)
+Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist)
 {
-    a = new int*[r];
-    for (int i = 0; i < r; ++i)
+    const int N_NEIGHBOR = 3;
+    Neighbor best;
+    Schedule ss(schedule);
+    for (int i = 0; i < N_NEIGHBOR; ++i)
     {
-        a[i] = new int[c];
-    }
-}
-
-void DelArray2D(int **&a, int c)
-{
-    for (int i = 0; i < c; ++i)
-    {
-        delete [] a[i];
-    }
-    delete [] a;
-}
-
-int Objective(int **dp, int mac, int job)
-{
-    for (int i = 0; i < mac; ++i)
-    {
-        for (int j = 0; j < job; ++j)
+        int joba = rand()%schedule.Jobs();
+        int jobb;
+        do
         {
-            int m = (i > 0) ? dp[i-1][j] : 0;
-            int n = (j > 0) ? dp[i][j-1] : 0;
-            
-            dp[i][j] += max(m,n); 
-        }
-    }
-    return dp[mac-1][job-1];
-}
-
-void SwapJob(int **a, int mac, int ja, int jb)
-{
-    for(int i = 0; i < mac; ++i)
-    {
-        swap(a[i][ja], a[i][jb]);
-    }
-}
-
-void PrintTable(int **a, int mac, int job)
-{
-    for (int i = 0; i < mac; ++i)
-    {
-        for (int j = 0; j < job; ++j)
+            jobb = rand()%schedule.Jobs();
+        } while (joba == jobb);
+        ss.Swap(joba, jobb);
+        int cvalue = Calculate(ss);
+        if(cvalue > best.getValue())
         {
-            cout << a[i][j];
+            best.SetAll(joba,jobb,cvalue);
         }
+        ss.Swap(joba, jobb);
     }
+    return best;
+}
+
+int Calculate(const Schedule &schedule)
+{
+    std::vector<int> timespan(schedule.Jobs()+1, 0);
+    //std::cout << std::endl;
+    for (int i = 0; i < schedule.Machines(); ++i)
+    {
+        for (int j = 1; j <= schedule.Jobs(); ++j)
+        {
+            timespan[j] = std::max(timespan[j], timespan[j-1]) + schedule.getMatrix()[i][j-1];
+            //std::cout << timespan[j] << " ";
+        }
+        //std::cout << std::endl;
+    }
+    return timespan[schedule.Jobs()];
+}
+
+void VisitNeighbor(Schedule &schedule, const Neighbor &nb)
+{
+    schedule.Swap(nb.getJobA(),nb.getJobB());
 }
