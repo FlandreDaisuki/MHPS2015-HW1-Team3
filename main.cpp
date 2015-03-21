@@ -5,9 +5,6 @@
 #include <ctime>
 #include "datatype.h"
 
-Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist);
-int Calculate(const Schedule &schedule);
-
 int main(int argc, char const *argv[])
 {
     srand(time(NULL));
@@ -30,7 +27,7 @@ int main(int argc, char const *argv[])
         }
     }
     schedule.Print();
-    std::cout << "Total: " << Calculate(schedule) << std::endl << std::endl;
+    std::cout << "Total: " << schedule.Calculate() << std::endl << std::endl;
     
 
     const int TIMES_TO_FIND = 300;
@@ -43,59 +40,19 @@ int main(int argc, char const *argv[])
         Neighbor nb;
         for (int tfind = 0; tfind < TIMES_TO_FIND; ++tfind)
         {
-            nb = FindNeighbor(new_schedule, tabulist);
+            nb = new_schedule.FindNeighbor(20, tabulist);
             new_schedule.Visit(nb);
             tabulist.Push(nb);
         }
         solution.push_back(nb.getValue());
     }
 
-
     std::cout << "Solution: ";
     for (int i = 0; i < solution.size(); ++i)
     {
         std::cout << solution[i] <<" ";
     }
+    std::cout << std::endl;
 
     return 0;
-}
-
-Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist)
-{
-    const int N_NEIGHBOR = 4;
-    Neighbor best;
-    Schedule ss(schedule);
-    for (int i = 0; i < N_NEIGHBOR; ++i)
-    {
-        int joba = rand()%schedule.Jobs();
-        int jobb;
-        do
-        {
-            jobb = rand()%schedule.Jobs();
-        } while (joba == jobb);
-        ss.Swap(joba, jobb);
-
-        int cvalue = Calculate(ss);
-
-        if(!tabulist.inTabu(cvalue) && cvalue > best.getValue() || cvalue > tabulist.Best().getValue())
-        {
-            best.SetAll(joba,jobb,cvalue);
-        }
-        ss.Swap(joba, jobb);
-    }
-    return best;
-}
-
-int Calculate(const Schedule &schedule)
-{
-    std::vector<int> timespan(schedule.Jobs()+1, 0);
-
-    for (int i = 0; i < schedule.Machines(); ++i)
-    {
-        for (int j = 1; j <= schedule.Jobs(); ++j)
-        {
-            timespan[j] = std::max(timespan[j], timespan[j-1]) + schedule.getMatrix()[i][j-1];
-        }
-    }
-    return timespan[schedule.Jobs()];
 }
