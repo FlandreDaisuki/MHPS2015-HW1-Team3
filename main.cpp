@@ -6,8 +6,6 @@
 #include "datatype.h"
 
 Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist);
-void VisitNeighbor(Schedule &schedule, const Neighbor &nb);
-void Tabu(Tabulist &tabulist, const Neighbor &nb) {}
 int Calculate(const Schedule &schedule);
 
 int main(int argc, char const *argv[])
@@ -16,9 +14,8 @@ int main(int argc, char const *argv[])
     const int HOW_TIMES_TO_RUN = 20;
     int job, machine;
     std::string fname;
-    //std::cin >> job >> machine >> fname;
     std::ifstream fin;
-    fin.open("data/debug");
+    fin.open("data/tai20_5_1.txt");
 
     fin >> job >> machine >> fname;
 
@@ -29,26 +26,43 @@ int main(int argc, char const *argv[])
     {
         for (int j = 0; j < job; ++j)
         {
-            //std::cin >> schedule.getMatrix()[i][j];
             fin >> schedule.getMatrix()[i][j];
         }
     }
     schedule.Print();
     std::cout << "Total: " << Calculate(schedule) << std::endl << std::endl;
-    Tabulist tabulist;
+    
 
-    Neighbor nb = FindNeighbor(schedule, tabulist);
-    nb.Print();
-    solution.push_back(nb.getValue());
-    VisitNeighbor(schedule, nb);
-    Tabu(tabulist, nb);
+    const int TIMES_TO_FIND = 300;
+    const int SOLUTION_TO_GEN = 10;
+    
+    for (int sol = 0; sol < SOLUTION_TO_GEN; ++sol)
+    {
+        Tabulist tabulist(5);
+        Schedule new_schedule(schedule);
+        Neighbor nb;
+        for (int tfind = 0; tfind < TIMES_TO_FIND; ++tfind)
+        {
+            nb = FindNeighbor(new_schedule, tabulist);
+            new_schedule.Visit(nb);
+            tabulist.Push(nb);
+        }
+        solution.push_back(nb.getValue());
+    }
+
+
+    std::cout << "Solution: ";
+    for (int i = 0; i < solution.size(); ++i)
+    {
+        std::cout << solution[i] <<" ";
+    }
 
     return 0;
 }
 
 Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist)
 {
-    const int N_NEIGHBOR = 3;
+    const int N_NEIGHBOR = 4;
     Neighbor best;
     Schedule ss(schedule);
     for (int i = 0; i < N_NEIGHBOR; ++i)
@@ -60,8 +74,10 @@ Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist)
             jobb = rand()%schedule.Jobs();
         } while (joba == jobb);
         ss.Swap(joba, jobb);
+
         int cvalue = Calculate(ss);
-        if(cvalue > best.getValue())
+
+        if(!tabulist.inTabu(cvalue) && cvalue > best.getValue() || cvalue > tabulist.Best().getValue())
         {
             best.SetAll(joba,jobb,cvalue);
         }
@@ -73,20 +89,13 @@ Neighbor FindNeighbor(const Schedule &schedule, const Tabulist &tabulist)
 int Calculate(const Schedule &schedule)
 {
     std::vector<int> timespan(schedule.Jobs()+1, 0);
-    //std::cout << std::endl;
+
     for (int i = 0; i < schedule.Machines(); ++i)
     {
         for (int j = 1; j <= schedule.Jobs(); ++j)
         {
             timespan[j] = std::max(timespan[j], timespan[j-1]) + schedule.getMatrix()[i][j-1];
-            //std::cout << timespan[j] << " ";
         }
-        //std::cout << std::endl;
     }
     return timespan[schedule.Jobs()];
-}
-
-void VisitNeighbor(Schedule &schedule, const Neighbor &nb)
-{
-    schedule.Swap(nb.getJobA(),nb.getJobB());
 }

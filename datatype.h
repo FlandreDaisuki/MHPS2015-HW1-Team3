@@ -3,8 +3,9 @@
 #include <vector>
 #include <iostream>
 #include <utility>
+#include <deque>
 
-typedef std::vector<int> Tabulist;
+//typedef std::vector<int> Tabulist;
 typedef std::vector<int> Solution;
 typedef std::vector< std::vector<int> > Matrix;
 
@@ -35,7 +36,7 @@ public:
             std::swap(this->joba, this->jobb);
         }
     }
-    void Print()
+    void Print() const
     {
         std::cout << "(" << this->joba << " , " << this->jobb << " , " << this->objvalue << ")" << std::endl;
     }
@@ -88,7 +89,59 @@ public:
             std::swap(matrix[i][a],matrix[i][b]);
         }
     }
+    void Visit(const Neighbor &nb)
+    {
+        this->Swap(nb.getJobA(),nb.getJobB());
+    }
 private:
     int job, machine;
     Matrix matrix;
+};
+
+class Tabulist
+{
+public:
+    Tabulist(int n) : limit(n) {}
+    ~Tabulist() {};
+    void Push(const Neighbor nb)
+    {
+        q.push_back(nb);
+        if(q.size() > limit)
+        {
+            q.pop_front();
+        }
+        if(nb.getValue() > best.getValue())
+        {
+            best = nb;
+        }
+    }
+    void Pop()
+    {
+        if(!q.empty())
+        {
+            q.pop_front();
+        }
+    }
+
+    const Neighbor& Best() const
+    {
+        return this->best;
+    }
+
+    std::deque<Neighbor>& List() { return q; }
+    bool inTabu(int value) const
+    {
+        for (const auto& nb: q)
+        {
+            if(nb.getValue() == value)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+private:
+    std::deque<Neighbor> q;
+    Neighbor best;
+    int limit;
 };
