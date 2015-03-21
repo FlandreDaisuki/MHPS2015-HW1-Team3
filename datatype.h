@@ -5,7 +5,6 @@
 #include <utility>
 #include <deque>
 
-//typedef std::vector<int> Tabulist;
 typedef std::vector<int> Solution;
 typedef std::vector< std::vector<int> > Matrix;
 
@@ -15,7 +14,7 @@ public:
     Neighbor() : Neighbor(0, 0, 1e-5) {};
     Neighbor(int a,int b,int v) : joba(a), jobb(b), objvalue(v)
     {
-        // garantee joba < jobb
+        // guarantee joba < jobb
         if (a>b)
         {
             std::swap(this->joba, this->jobb);
