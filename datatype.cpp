@@ -163,8 +163,8 @@ Neighbor Schedule::FindNeighbor(int n, const Tabulist &tabulist) const
         ss.SwapJobs(joba, jobb);
 
         int cvalue = ss.Calculate();
-
-        if(!tabulist.inTabu(cvalue) && cvalue > best.getValue() || cvalue > tabulist.Best().getValue())
+        
+        if(cvalue > tabulist.Best().getValue() || !tabulist.inTabu(cvalue) && cvalue > best.getValue())
         {
             best.SetAll(joba, jobb, cvalue);
         }
