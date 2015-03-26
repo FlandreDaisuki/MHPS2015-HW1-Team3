@@ -3,7 +3,7 @@
 /*
  *  Class Neighbor
  */
-Neighbor::Neighbor(): Neighbor(0, 0, 1e-5)
+Neighbor::Neighbor(): Neighbor(0, 0, 1e5)
 {
     //Nothing todo
 };
@@ -27,9 +27,9 @@ void Neighbor::SetAll(int a, int b, int v)
     this->objvalue = v;
     this->xchg();
 };
-void Neighbor::Print() const
+void Neighbor::Print(std::ostream &out) const
 {
-    std::cout << "(" << this->joba << " , " << this->jobb << " , " << this->objvalue << ")" << std::endl;
+    out << "(" << this->joba << " , " << this->jobb << " , " << this->objvalue << ")" << std::endl;
 };
 void Neighbor::xchg()
 {
@@ -87,6 +87,16 @@ bool Tabulist::inTabu(int value) const
     return false;
 }
 
+void Tabulist::Print(std::ostream &out) const
+{
+    out << "Tabulist:" << std::endl;
+    for (const auto& nb: q)
+    {
+        out << nb.getValue() << " ";
+    }
+    out << std::endl;
+}
+
 /*
  *  Class Schedule
  */
@@ -110,18 +120,19 @@ Schedule::~Schedule()
 {
     //Nothing todo
 };
-void Schedule::Print() const
+void Schedule::Print(std::ostream &out) const
 {
-    std::cout << "Jobs:" << this->job << " Machines:" << this->machine << std::endl;
+    out << "Jobs:" << this->job << " Machines:" << this->machine << std::endl;
     for (int i = 0; i < this->machine; ++i)
     {
         for (int j = 0; j < this->job; ++j)
         {
-            std::cout.width(2);
-            std::cout << this->matrix[i][j] <<" ";
+            out.width(2);
+            out << this->matrix[i][j] <<" ";
         }
-        std::cout << std::endl;
+        out << std::endl;
     }
+    out << "Span: " << Calculate() << std::endl << std::endl;
 };
 void Schedule::SwapJobs(int a, int b)
 {
@@ -164,7 +175,7 @@ Neighbor Schedule::FindNeighbor(int n, const Tabulist &tabulist) const
 
         int cvalue = ss.Calculate();
         
-        if(cvalue > tabulist.Best().getValue() || !tabulist.inTabu(cvalue) && cvalue > best.getValue())
+        if(cvalue < tabulist.Best().getValue() || !tabulist.inTabu(cvalue) && cvalue < best.getValue())
         {
             best.SetAll(joba, jobb, cvalue);
         }
@@ -172,3 +183,36 @@ Neighbor Schedule::FindNeighbor(int n, const Tabulist &tabulist) const
     }
     return best;
 };
+
+/*
+ *  Class Solution
+ */
+Solution::Solution():max(-1), min(1e8), sum(0)
+{
+    //Nothing todo
+};
+Solution::~Solution()
+{
+    //Nothing todo
+};
+void Solution::Push(int a)
+{
+    v.push_back(a);
+    max = std::max(max, a);
+    min = std::min(min, a);
+    sum += a;
+};
+void Solution::Print(std::ostream &out) const
+{
+    out << "Solution:" << std::endl;
+    out << "Max: " << max << " min: " << min << " avg: " << (double)sum/v.size() << std::endl;
+    for (int i = 0; i < v.size(); ++i)
+    {
+        out << v[i] <<" ";
+    }
+    out << std::endl;
+};
+int Solution::Max() const { return max; };
+int Solution::Min() const { return min; };
+int Solution::Size() const { return v.size(); };
+int Solution::Sum() const { return sum; };
