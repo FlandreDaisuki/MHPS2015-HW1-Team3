@@ -15,6 +15,6 @@ debug: build
 	./tabu
 	make clean
 build:
-	g++ -std=c++11 *.cpp -o tabu
+	g++ -std=c++11 -O3 *.cpp -o tabu
 clean:
 	rm ./tabu
