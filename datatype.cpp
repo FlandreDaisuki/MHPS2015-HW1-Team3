@@ -57,7 +57,7 @@ void Tabulist::Push(const Neighbor nb)
     {
         q.pop_front();
     }
-    if(nb.getValue() > best.getValue())
+    if(nb.getValue() < best.getValue())
     {
         best = nb;
     }
