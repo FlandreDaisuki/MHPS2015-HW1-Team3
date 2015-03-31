@@ -49,27 +49,30 @@ int main(int argc, char const *argv[])
     const int SOLUTION_TO_GEN = 50;
     const int NEIGHBORHOOD_SIZE = 10;
     const int TABULIST_SIZE = 10;
+    clock_t tTotal = 0;
 
-    clock_t tStart = clock();
     for (int sol = 0; sol < SOLUTION_TO_GEN; ++sol)
     {
         Tabulist tabulist(TABULIST_SIZE);
         Schedule new_schedule(schedule);
+        new_schedule.Randomize(new_schedule.Jobs());
         Neighbor nb;
+
+        clock_t tStart = clock();
         for (int tfind = 0; tfind < TIMES_TO_HYBRID; ++tfind)
         {
             nb = new_schedule.FindNeighbor(NEIGHBORHOOD_SIZE, tabulist);
             new_schedule.Visit(nb);
             tabulist.Push(nb);
         }
+        tTotal += clock() - tStart;
         solution.Push(nb.getValue());
     }
-    clock_t tEnd = clock();
 
     solution.Print(fout);
 
     fout << std::endl;
-    fout << "Total time: " << (double)(tEnd-tStart)/CLOCKS_PER_SEC <<" sec"<< std::endl;
+    fout << "Total time: " << (double)tTotal/CLOCKS_PER_SEC <<" sec"<< std::endl;
 
     return 0;
 }

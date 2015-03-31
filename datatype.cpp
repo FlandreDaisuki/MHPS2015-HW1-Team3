@@ -204,7 +204,18 @@ Neighbor Schedule::FindAllNeighbor(const Tabulist &tabulist) const
     }
     return best;
 };
-
+void Schedule::Randomize(int n) {
+    for (int i = 0; i < n; ++i)
+    {
+        int joba = rand()%this->job;
+        int jobb;
+        do
+        {
+            jobb = rand()%this->job;
+        } while (joba == jobb);
+        this->SwapJobs(joba, jobb);
+    }
+}
 /*
  *  Class Solution
  */

@@ -56,6 +56,7 @@ public:
     void Print(std::ostream &out = std::cout) const;
     int Jobs() const { return job; }
     int Machines() const { return machine; }
+    void Randomize(int n);
     void SwapJobs(int a, int b);
     void Visit(const Neighbor &nb);
     int Calculate() const;
