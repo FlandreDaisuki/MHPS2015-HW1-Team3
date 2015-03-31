@@ -183,6 +183,27 @@ Neighbor Schedule::FindNeighbor(int n, const Tabulist &tabulist) const
     }
     return best;
 };
+Neighbor Schedule::FindAllNeighbor(const Tabulist &tabulist) const
+{
+    Neighbor best;
+    Schedule ss(*this);
+    for (int joba = 0; joba < this->job-1; ++joba)
+    {
+        for (int jobb = joba + 1; jobb < this->job; ++jobb)
+        {
+            ss.SwapJobs(joba, jobb);
+
+            int cvalue = ss.Calculate();
+            
+            if(cvalue < tabulist.Best().getValue() || !tabulist.inTabu(cvalue) && cvalue < best.getValue())
+            {
+                best.SetAll(joba, jobb, cvalue);
+            }
+            ss.SwapJobs(joba, jobb);
+        }        
+    }
+    return best;
+};
 
 /*
  *  Class Solution

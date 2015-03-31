@@ -60,6 +60,7 @@ public:
     void Visit(const Neighbor &nb);
     int Calculate() const;
     Neighbor FindNeighbor(int n, const Tabulist &tabulist) const;
+    Neighbor FindAllNeighbor(const Tabulist &tabulist) const;
 private:
     int job, machine;
     Matrix matrix;
