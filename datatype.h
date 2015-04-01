@@ -8,6 +8,20 @@
 #include <algorithm>
 
 typedef std::vector< std::vector<int> > Matrix;
+enum Tabutype {ObjValue, Pair};
+
+/*Global Vars*/
+extern std::string finpath;
+extern std::string foutpath;
+extern Tabutype g_tabutype;
+extern bool g_staticTabuSize;
+extern int g_tabuSize;
+extern int g_tabuMaxSize;
+extern int g_iterationTimes;
+extern int g_solutionNum;
+
+int argset(int argc, char const *argv[]);
+void argPrint(std::ostream &out = std::cout);
 
 class Neighbor
 {
@@ -29,18 +43,20 @@ private:
 class Tabulist
 {
 public:
-    Tabulist(int n);
+    Tabulist(Tabutype t, int n);
     ~Tabulist();
 
     void Push(const Neighbor nb);
     void Pop();
 
     const Neighbor& Best() const;
-    bool inTabu(int value) const;
+    bool inTabu(const Neighbor &testn) const;
     void Print(std::ostream &out = std::cout) const;
+    void addLimit(int n);
 private:
     std::deque<Neighbor> q;
     Neighbor best;
+    Tabutype type;
     int limit;
 };
 
@@ -60,7 +76,6 @@ public:
     void SwapJobs(int a, int b);
     void Visit(const Neighbor &nb);
     int Calculate() const;
-    Neighbor FindNeighbor(int n, const Tabulist &tabulist) const;
     Neighbor FindAllNeighbor(const Tabulist &tabulist) const;
 private:
     int job, machine;
@@ -72,7 +87,7 @@ class Solution
 public:
     Solution();
     ~Solution();
-    void Push(int a);
+    void Push(const Neighbor &n);
     void Print(std::ostream &out = std::cout) const;
     int Max() const;
     int Min() const;

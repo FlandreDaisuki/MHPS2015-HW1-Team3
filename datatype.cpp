@@ -1,5 +1,65 @@
 #include "datatype.h"
 
+int argset(int argc, char const *argv[])
+{
+    for (int i = 1; i < argc && i+1 < argc; i+=2)
+    {
+        std::string attr(argv[i]);
+        std::string val(argv[i+1]);
+        if (attr == "-i")
+        {
+            finpath = val;
+        }
+        else if(attr == "-o")
+        {
+            foutpath = val;
+        }
+        else if(attr == "-t") //tabu type
+        {
+            if (val == "pair")
+            {
+                g_tabutype = Tabutype::Pair;
+            }
+        }
+        else if(attr == "-l") //tabu list size
+        {
+            int sizedet = sscanf(val.c_str(),"%d%*c%d",&g_tabuSize,&g_tabuMaxSize);
+            g_staticTabuSize = (sizedet == 1);
+        }
+        else if(attr == "-r")
+        {
+            sscanf(val.c_str(),"%d",&g_iterationTimes);
+        }
+        else if(attr == "-s")
+        {
+            sscanf(val.c_str(),"%d",&g_solutionNum);
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    if(finpath == "")
+    {
+        return -1;
+    }
+    if(finpath != "" && foutpath == "")
+    {
+        foutpath = "output" + finpath;
+    }
+    return 0;
+}
+void argPrint(std::ostream &out)
+{   
+    using std::endl;
+    out << "Tabutype: " << ((g_tabutype == Tabutype::ObjValue) ? "Objective Value":"Swap Pair") << endl;
+    out << "Tabulist Size: " << g_tabuSize;
+    if (!g_staticTabuSize) { out << " ~ " << g_tabuMaxSize; }
+    out << endl << "Iteration Times:" << g_iterationTimes << endl;
+    out << "Solution Num:" << g_solutionNum << endl << endl;
+}
+
 /*
  *  Class Neighbor
  */
@@ -42,7 +102,7 @@ void Neighbor::xchg()
 /*
  *  Class Tabulist
  */
-Tabulist::Tabulist(int n) : limit(n)
+Tabulist::Tabulist(Tabutype t,int n) : type(t),limit(n)
 {
     //Nothing todo
 };
@@ -59,7 +119,7 @@ void Tabulist::Push(const Neighbor nb)
     }
     if(nb.getValue() < best.getValue())
     {
-        best = nb;
+        best.SetAll(nb.getJobA(),nb.getJobB(),nb.getValue());
     }
 }
 void Tabulist::Pop()
@@ -69,30 +129,45 @@ void Tabulist::Pop()
         q.pop_front();
     }
 }
-
 const Neighbor& Tabulist::Best() const
 {
     return this->best;
 }
-
-bool Tabulist::inTabu(int value) const
+bool Tabulist::inTabu(const Neighbor &testn) const
 {
-    for (const auto& nb: q)
+    if(this->type == Tabutype::ObjValue)
     {
-        if(nb.getValue() == value)
+        for (const auto& nb: q)
         {
-            return true;
+            if(nb.getValue() == testn.getValue())
+            {
+                return true;
+            }
         }
+        return false;
     }
-    return false;
+    else
+    {
+        for (const auto& nb: q)
+        {
+            if(nb.getJobA() == testn.getJobA() && nb.getJobB() == testn.getJobB())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }
-
+void Tabulist::addLimit(int n)
+{
+    this->limit += n;
+}
 void Tabulist::Print(std::ostream &out) const
 {
     out << "Tabulist:" << std::endl;
     for (const auto& nb: q)
     {
-        out << nb.getValue() << " ";
+        nb.Print(out);
     }
     out << std::endl;
 }
@@ -158,34 +233,9 @@ int Schedule::Calculate() const
     }
     return timespan[job];
 };
-Neighbor Schedule::FindNeighbor(int n, const Tabulist &tabulist) const
-{
-    const int N_NEIGHBOR = n;
-    Neighbor best;
-    Schedule ss(*this);
-    for (int i = 0; i < N_NEIGHBOR; ++i)
-    {
-        int joba = rand()%this->job;
-        int jobb;
-        do
-        {
-            jobb = rand()%this->job;
-        } while (joba == jobb);
-        ss.SwapJobs(joba, jobb);
-
-        int cvalue = ss.Calculate();
-        
-        if(cvalue < tabulist.Best().getValue() || !tabulist.inTabu(cvalue) && cvalue < best.getValue())
-        {
-            best.SetAll(joba, jobb, cvalue);
-        }
-        ss.SwapJobs(joba, jobb);
-    }
-    return best;
-};
 Neighbor Schedule::FindAllNeighbor(const Tabulist &tabulist) const
 {
-    Neighbor best;
+    Neighbor best, temp;
     Schedule ss(*this);
     for (int joba = 0; joba < this->job-1; ++joba)
     {
@@ -194,8 +244,9 @@ Neighbor Schedule::FindAllNeighbor(const Tabulist &tabulist) const
             ss.SwapJobs(joba, jobb);
 
             int cvalue = ss.Calculate();
-            
-            if(cvalue < tabulist.Best().getValue() || !tabulist.inTabu(cvalue) && cvalue < best.getValue())
+            temp.SetAll(joba, jobb, cvalue);
+
+            if(cvalue < tabulist.Best().getValue() || !tabulist.inTabu(temp) && cvalue < best.getValue())
             {
                 best.SetAll(joba, jobb, cvalue);
             }
@@ -227,8 +278,9 @@ Solution::~Solution()
 {
     //Nothing todo
 };
-void Solution::Push(int a)
+void Solution::Push(const Neighbor &n)
 {
+    int a = n.getValue();
     v.push_back(a);
     max = std::max(max, a);
     min = std::min(min, a);
@@ -242,7 +294,7 @@ void Solution::Print(std::ostream &out) const
     {
         out << v[i] <<" ";
     }
-    out << std::endl;
+    out << std::endl << std::endl;
 };
 int Solution::Max() const { return max; };
 int Solution::Min() const { return min; };
