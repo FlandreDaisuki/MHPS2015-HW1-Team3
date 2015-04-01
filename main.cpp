@@ -72,7 +72,6 @@ int main(int argc, char const *argv[])
         solution.Push(bestNeighbor);
         if(min_schedule.Calculate() > bestNeighbor.getValue()) {
             min_schedule = new_schedule;
-            tabulist.Print(std::cout);
         }
     }
 
