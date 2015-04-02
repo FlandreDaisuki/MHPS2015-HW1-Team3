@@ -45,7 +45,11 @@ int main(int argc, char const *argv[])
     }
     
     Schedule min_schedule(schedule);
+    std::vector<int> min_iterationList;
+    int onetenthIter = g_iterationTimes/10;
+    int onetenthAddSize = (g_tabuMaxSize - g_tabuSize)/10;
     clock_t tTotal = 0;
+
 
     for (int sol = 0; sol < g_solutionNum; ++sol)
     {
@@ -53,16 +57,16 @@ int main(int argc, char const *argv[])
         Schedule new_schedule(schedule);
         new_schedule.Randomize(new_schedule.Jobs());
         Neighbor bestNeighbor;
+        std::vector<int> iterationList;
 
-        int onetenthIter = g_iterationTimes/10;
-        int onetenthAddSize = (g_tabuMaxSize - g_tabuSize)/10;
-        
         clock_t tStart = clock();
         for (int iter_t = 0; iter_t < g_iterationTimes; ++iter_t)
         {
             bestNeighbor = new_schedule.FindAllNeighbor(tabulist);
             new_schedule.Visit(bestNeighbor);
             tabulist.Push(bestNeighbor);
+            iterationList.push_back(bestNeighbor.getValue());
+
             if(!g_staticTabuSize && iter_t % onetenthIter == 0)
             {
                 tabulist.addLimit(onetenthAddSize);
@@ -72,12 +76,19 @@ int main(int argc, char const *argv[])
         solution.Push(bestNeighbor);
         if(min_schedule.Calculate() > bestNeighbor.getValue()) {
             min_schedule = new_schedule;
+            min_iterationList = iterationList;
         }
     }
 
     argPrint(fout);
     solution.Print(fout);
     min_schedule.Print(fout);
+    std::ofstream csvout;
+    csvout.open(("csv/"+fname+".csv").c_str());
+    for(size_t i = 0 ; i < min_iterationList.size() ; ++i)
+    {
+        csvout << min_iterationList[i] << std::endl;
+    }
 
     fout << "Total time: " << (double)tTotal/CLOCKS_PER_SEC <<" sec"<< std::endl;
 
