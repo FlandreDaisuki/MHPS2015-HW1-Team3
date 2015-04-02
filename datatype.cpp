@@ -246,7 +246,7 @@ Neighbor Schedule::FindAllNeighbor(const Tabulist &tabulist) const
             int cvalue = ss.Calculate();
             temp.SetAll(joba, jobb, cvalue);
 
-            if(cvalue < tabulist.Best().getValue() || !tabulist.inTabu(temp) && cvalue < best.getValue())
+            if(cvalue < tabulist.Best().getValue() || (!tabulist.inTabu(temp) && cvalue < best.getValue()))
             {
                 best.SetAll(joba, jobb, cvalue);
             }
