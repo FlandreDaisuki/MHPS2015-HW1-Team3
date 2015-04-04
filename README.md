@@ -5,7 +5,7 @@
 ###演算法
 
 ####禁忌搜尋法(Tabu Search)
-禁忌搜尋法會藉由禁忌列表(tabu list)接受比現在還要差的解，作為跳脫區域最佳值(local optima)的手段
+禁忌搜尋法會藉由參考禁忌列表(tabu list)接受比現在還要差的解，作為跳脫區域最佳值(local optima)的手段
 
 #####Psuedo Code
 
@@ -22,41 +22,97 @@
         schedule.visit_to(nb);
         tabulist.push(nb);
     }
-
+    
 #####演算法參數
 
 - 解表示法：最短工作時程(minimum makespan)
 - 鄰域函式：交換任兩個工作
 - 鄰域大小：CJob取2
-- 接受條件：當解未在禁忌列表中並且比目前解還好(小)
+- 接受條件：當解未在禁忌列表中並且在鄰域中取最佳解
 - 渴望條件：解比禁忌列表中的解都還要好(小)
 - 終止條件：演化1000代
+
+#####實作細節
+
+- Neighbor
+  - 在此鄰域函式中，鄰居為一解與目前解相差一次工作的交換，而且鄰居必有其目標值
+	```
+	Neighbor
+	- job1
+	- job2 //使job1恆小於job2
+	- obj_value
+	```
+- Tabulist
+  - 禁忌列表為鄰居的Queue
+  - 禁忌列表會在加入新Neighbor時檢查並紀錄最佳解，使檢查渴望條件(aspiration criterion)時更快
+  - 禁忌列表能知道現在禁止的種類是目標值(Objective value)或是工作對(Job pair/Swap pair)來檢查鄰居是否被禁止
+
+- Schedule
+  - Schedule為一種排序排程解，由於這個鄰域函式可以使編碼解碼(encoding/decoding scheme)可以幾乎不做
+  - Schedule直接以2D vector實作
+  - 目標函式(Objective function)以DP實作
+
+    ```
+	for m = 1:machine {
+		for j = 1:job {
+			if( j==1 && m==1 ) {
+				obj[m][j] = Schedule[m][j]
+			} else if ( j==1 && m!=1 ) {
+				obj[m][j] = Schedule[m][j] + obj[m-1][j]
+			} else if ( j!=1 && m==1 ) {
+				obj[m][j] = Schedule[m][j] + obj[m][j-1]
+			} else {
+				obj[m][j] = Schedule[m][j] + max(obj[m][j-1], obj[m-1][j])
+			}
+		}
+	}
+	return obj[machine][job]
+
+    ```
+  - 故[Psuedo Code](#psuedo-code)中拜訪鄰居的實作流程為下
+
+	```
+	min_obj_value = 1e9
+	for j1 = 1:job-1 {
+		for j2 = j1+1:job {
+			Schedule.Swap(j1, j2)                             // 拜訪鄰居
+			obj_value = Schedule.Calculate()                  // 計算鄰居目標值
+			if(Neighbor(j1, j2, obj_value) NOT in tabulist
+			    or obj_value better than the best one of tabulist) {
+				                                              // 鄰居不在禁忌列表中或鄰居優於禁忌列表中的最佳解 為合法鄰居
+				min_obj_value = min(min_obj_value, obj_value) // 紀錄合法鄰居中最佳解
+			}
+			Schedule.Swap(j1, j2)                             // 道別鄰居
+		}	
+	}
+    return the neighbor has min_obj_value
+	```
 
 ###實驗與結果
 
 #####實驗參數
 
 - 放入禁忌列表的種類
-   - 目標值(Objective value)
-   - 工作對/交換對(Job pair/Swap pair)
+  - 目標值(Objective value)
+  - 工作對/交換對(Job pair/Swap pair)
 
 - 禁忌列表的長度
-   - 小型(約為鄰域大小的1/8)
-   - 中型(約為鄰域大小的1/4)
-   - 大型(約為鄰域大小的1/2)
-   - 動態(從小型到大型規律動態地變化長度)
+  - 小型(約為鄰域大小的1/8)
+  - 中型(約為鄰域大小的1/4)
+  - 大型(約為鄰域大小的1/2)
+  - 動態(從小型到大型規律動態地變化長度)
 
 - 測資規模：
-   - 工作：20, 50, 100
-   - 機器：5, 10, 20
+  - 工作：20, 50, 100
+  - 機器：5, 10, 20
 
 - 測資出處
-   -  Taillard E (1993) Benchmarks for basic scheduling problems. Eur. J. Oper. Res. 64(2), 278–285
+  -  Taillard E (1993) Benchmarks for basic scheduling problems. Eur. J. Oper. Res. 64(2), 278–285
 
 - 測試環境
-   - OS：Linux Mint 17.1 MATE 64-bit
-   - Processor：AMD FX(tm)-4170 Quad-Core Processor x 2
-   - RAM：7.8 GiB
+  - OS：Linux Mint 17.1 MATE 64-bit
+  - Processor：AMD FX(tm)-4170 Quad-Core Processor x 2
+  - RAM：7.8 GiB
 
 #####實驗結果
 表示法：Max / min / average / standard deviation
@@ -95,5 +151,30 @@
 |     100_10    | 5912 / 5785 / 5827.2  / 27.75 | 5879 / 5784 / 5825.82 / 23.82 | 5912 / 5784 / 5817.02 / 25.22 | 5876 / 5786 / 5822.22 / 24.52 |
 |     100_20    | 6470 / 6348 / 6417.66 / 24.59 | 6448 / 6363 / 6407.38 / 22.44 | 6468 / 6358 / 6408.98 / 23.40 | 6467 / 6358 / 6404.8  / 25.02 |
 
+#####實驗小結
 
+_禁忌種類在不同禁忌列表長度中的影響_
+- 小型
+
+   我們可以觀察到兩者求出來的最小值相近，尤其在小測資時幾乎沒有影響
+- 中型
+
+   和小型結論差不多，值得一提的是在禁忌目標值20_5的測資中，幾乎清一色都是1297
+- 大型
+
+   同上，即使將禁忌列表的長度拉到鄰域函式個數的1/2，這兩種禁忌種類還是互有勝負
+- 動態
+
+   在動態的時候發現使用禁忌工作對求得的最佳值皆不輸禁忌目標值了
+
+_相同禁忌列表長度中測資大小的影響_
+- 20個job
+
+   XXX
+- 50個job
+
+   XXX
+- 100個job
+
+   XXX
 ###結論
