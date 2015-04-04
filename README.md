@@ -1,9 +1,13 @@
 ##Minimizing Makespan in Permutation Flow Shops using Three Trajectory-based Metaheuristics
 
 ###問題定義
-有一排程(Schedule)有j個工作、m台機器，每台機器對個別工作的工作時間為Tmj。
-每個工作必須依固定順序給m台機器做，每台機器也只能做一件事，而且是先進入先處理(First In First Serve)。
-現有一工作序列則可求出該工作序列的完成時間(或持續時間)，求在固定機器順序的情況下，可得最小完成時間的工作序列。
+一工廠有j個工作、m台機器。每台機器處理每個工作的時間不盡相同。機器為一有序的生產線。
+
+每個工作必須經過固定順序的機器處理，即工作只會給下一台機器處理。工作也是一序列。
+
+每台機器只會接受上一台機器處理結束的工作，而且每台機器只能同時處理一件工作，處理順序為先進先處理(FIFS, First In First Serve)。
+
+求一工作序列使該工廠的完成時間愈早(工作時間愈少)愈好。
 
 ###演算法
 
@@ -28,16 +32,17 @@
     
 #####演算法參數
 
-- 解表示法：最短工作時程(minimum makespan)
-- 鄰域函式：交換任兩個工作
-- 鄰域大小：CJob取2
-- 接受條件：當解未在禁忌列表中並且在鄰域中取最佳解
-- 渴望條件：解比禁忌列表中的解都還要好(小)
-- 終止條件：演化1000代
+- 解表示法(solution representation)：最佳排程及工作時程
+- 鄰域函式(neighborhood function)：交換任兩個工作
+- 鄰域大小(neighborhood size)：CJob取2
+- 目標函式(objective function)：排程的工作時程
+- 接受條件(acceptance criterion)：當解未在禁忌列表中並且在鄰域中取最佳解
+- 渴望條件(aspiration criterion)：解比禁忌列表中的解都還要好(小)
+- 終止條件(stopping criterion)：演化1000代
 
 #####實作細節
 
-- Neighbor
+- 鄰居 Neighbor
   - 在此鄰域函式中，鄰居為一解與目前解相差一次工作的交換，而且鄰居必有其目標值
 	```
 	Neighbor
@@ -45,15 +50,15 @@
 	- job2 //使job1恆小於job2
 	- obj_value
 	```
-- Tabulist
+- 禁忌列表 Tabulist
   - 禁忌列表為鄰居的Queue
-  - 禁忌列表會在加入新Neighbor時檢查並紀錄最佳解，使檢查渴望條件(aspiration criterion)時更快
+  - 禁忌列表會在加入新鄰居時檢查並紀錄最佳解，使檢查渴望條件(aspiration criterion)時更快
   - 禁忌列表能知道現在禁止的種類是目標值(Objective value)或是工作對(Job pair/Swap pair)來檢查鄰居是否被禁止
 
-- Schedule
-  - Schedule為一種排序排程解，由於這個鄰域函式可以使編碼解碼(encoding/decoding scheme)可以幾乎不做
-  - Schedule直接以2D vector實作
-  - 目標函式(Objective function)以DP實作
+- 排程 Schedule
+  - 排程為一種工作序列的解，由於這個鄰域函式可以使編碼解碼(encoding/decoding scheme)可以幾乎不做
+  - 排程直接以2D vector實作
+  - 目標函式以DP實作
 
     ```
 	for m = 1:machine {
@@ -77,7 +82,7 @@
 	```
 	min_obj_value = 1e9
 	for j1 = 1:job-1 {
-		for j2 = j1+1:job {
+		for j2 = (j1+1):job {
 			Schedule.Swap(j1, j2)                             // 拜訪鄰居
 			obj_value = Schedule.Calculate()                  // 計算鄰居目標值
 			if(Neighbor(j1, j2, obj_value) NOT in tabulist
